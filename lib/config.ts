@@ -32,6 +32,12 @@ export const AGENTS: Agent[] = [
     description: "Especialista en tributación y normativa fiscal",
     workflowId: process.env.NEXT_PUBLIC_EXPERTO_TRIBUTOS_ID?.trim() ?? "",
   },
+  {
+    id: "boicac",
+    name: "Experto en BOICAC",
+    description: "Especialista en normativa contable del BOICAC",
+    workflowId: process.env.NEXT_PUBLIC_EXPERTO_BOICAC_ID?.trim() ?? "",
+  },
 ];
 
 export const WORKFLOW_ID =
