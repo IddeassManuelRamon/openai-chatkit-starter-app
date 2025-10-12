@@ -84,6 +84,7 @@ export async function POST(request: Request): Promise<Response> {
       console.info("[create-session] upstream response", {
         status: upstreamResponse.status,
         statusText: upstreamResponse.statusText,
+        headers: Object.fromEntries(upstreamResponse.headers.entries()),
       });
     }
 
@@ -97,6 +98,9 @@ export async function POST(request: Request): Promise<Response> {
         status: upstreamResponse.status,
         statusText: upstreamResponse.statusText,
         body: upstreamJson,
+        workflowId: resolvedWorkflowId,
+        apiKeyPresent: Boolean(openaiApiKey),
+        apiKeyPrefix: openaiApiKey?.substring(0, 20),
       });
       return buildJsonResponse(
         {

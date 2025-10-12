@@ -179,14 +179,15 @@ export function ChatKitPanel({
 
   const getClientSecret = useCallback(
     async (currentSecret: string | null) => {
-      if (isDev) {
-        console.info("[ChatKitPanel] getClientSecret invoked", {
-          currentSecretPresent: Boolean(currentSecret),
-          workflowId: currentWorkflowId,
-          agentName: currentAgent.name,
-          endpoint: CREATE_SESSION_ENDPOINT,
-        });
-      }
+      // Log comentado para evitar ruido en consola
+      // if (isDev) {
+      //   console.info("[ChatKitPanel] getClientSecret invoked", {
+      //     currentSecretPresent: Boolean(currentSecret),
+      //     workflowId: currentWorkflowId,
+      //     agentName: currentAgent.name,
+      //     endpoint: CREATE_SESSION_ENDPOINT,
+      //   });
+      // }
 
       if (!isWorkflowConfigured) {
         const detail = "Configure workflow IDs in your .env file.";
@@ -223,13 +224,14 @@ export function ChatKitPanel({
 
         const raw = await response.text();
 
-        if (isDev) {
-          console.info("[ChatKitPanel] createSession response", {
-            status: response.status,
-            ok: response.ok,
-            bodyPreview: raw.slice(0, 1600),
-          });
-        }
+        // Log comentado para evitar ruido en consola
+        // if (isDev) {
+        //   console.info("[ChatKitPanel] createSession response", {
+        //     status: response.status,
+        //     ok: response.ok,
+        //     bodyPreview: raw.slice(0, 1600),
+        //   });
+        // }
 
         let data: Record<string, unknown> = {};
         if (raw) {
@@ -353,16 +355,17 @@ export function ChatKitPanel({
   const activeError = errors.session ?? errors.integration;
   const blockingError = errors.script ?? activeError;
 
-  if (isDev) {
-    console.debug("[ChatKitPanel] render state", {
-      isInitializingSession,
-      hasControl: Boolean(chatkit.control),
-      scriptStatus,
-      hasError: Boolean(blockingError),
-      workflowId: currentWorkflowId,
-      currentAgent: currentAgent.name,
-    });
-  }
+  // Logs de debug comentados para evitar interrupciones
+  // if (isDev) {
+  //   console.debug("[ChatKitPanel] render state", {
+  //     isInitializingSession,
+  //     hasControl: Boolean(chatkit.control),
+  //     scriptStatus,
+  //     hasError: Boolean(blockingError),
+  //     workflowId: currentWorkflowId,
+  //     currentAgent: currentAgent.name,
+  //   });
+  // }
 
   return (
     <div className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900">
