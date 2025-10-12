@@ -26,6 +26,12 @@ export const AGENTS: Agent[] = [
     description: "Asistente para gestión de despachos",
     workflowId: process.env.NEXT_PUBLIC_DESPACHOS_ID?.trim() ?? "",
   },
+  {
+    id: "tributos",
+    name: "Experto en Tributos",
+    description: "Especialista en tributación y normativa fiscal",
+    workflowId: process.env.NEXT_PUBLIC_EXPERTO_TRIBUTOS_ID?.trim() ?? "",
+  },
 ];
 
 export const WORKFLOW_ID =
