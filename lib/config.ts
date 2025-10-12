@@ -1,5 +1,33 @@
 import { ColorScheme, StartScreenPrompt, ThemeOption } from "@openai/chatkit";
 
+export type Agent = {
+  id: string;
+  name: string;
+  description: string;
+  workflowId: string;
+};
+
+export const AGENTS: Agent[] = [
+  {
+    id: "general",
+    name: "General",
+    description: "Asistente general para consultas variadas",
+    workflowId: process.env.NEXT_PUBLIC_GENERAL_ID?.trim() ?? "",
+  },
+  {
+    id: "n8n",
+    name: "N8N",
+    description: "Especialista en automatizaciones N8N",
+    workflowId: process.env.NEXT_PUBLIC_N8N_ID?.trim() ?? "",
+  },
+  {
+    id: "despachos",
+    name: "Despachos",
+    description: "Asistente para gestión de despachos",
+    workflowId: process.env.NEXT_PUBLIC_DESPACHOS_ID?.trim() ?? "",
+  },
+];
+
 export const WORKFLOW_ID =
   process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_ID?.trim() ?? "";
 

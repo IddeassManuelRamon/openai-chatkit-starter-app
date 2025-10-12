@@ -9,9 +9,12 @@ import {
   CREATE_SESSION_ENDPOINT,
   WORKFLOW_ID,
   getThemeConfig,
+  AGENTS,
 } from "@/lib/config";
 import { ErrorOverlay } from "./ErrorOverlay";
+import { AgentSelector } from "./AgentSelector";
 import type { ColorScheme } from "@/hooks/useColorScheme";
+import type { Agent } from "@/lib/config";
 
 export type FactAction = {
   type: "save";
@@ -61,6 +64,14 @@ export function ChatKitPanel({
       : "pending"
   );
   const [widgetInstanceKey, setWidgetInstanceKey] = useState(0);
+  const [currentAgent, setCurrentAgent] = useState<Agent>(AGENTS[0]);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string>(
+    AGENTS[0]?.workflowId || WORKFLOW_ID
+  );
+
+  const handleSelectAgent = useCallback((agent: Agent) => {
+    setCurrentAgent(agent);
+  }, []);
 
   const setErrorState = useCallback((updates: Partial<ErrorState>) => {
     setErrors((current) => ({ ...current, ...updates }));
@@ -132,13 +143,13 @@ export function ChatKitPanel({
   }, [scriptStatus, setErrorState]);
 
   const isWorkflowConfigured = Boolean(
-    WORKFLOW_ID && !WORKFLOW_ID.startsWith("wf_replace")
+    currentWorkflowId && !currentWorkflowId.startsWith("wf_replace")
   );
 
   useEffect(() => {
     if (!isWorkflowConfigured && isMountedRef.current) {
       setErrorState({
-        session: "Set NEXT_PUBLIC_CHATKIT_WORKFLOW_ID in your .env.local file.",
+        session: "Configure workflow IDs in your .env file.",
         retryable: false,
       });
       setIsInitializingSession(false);
@@ -157,19 +168,28 @@ export function ChatKitPanel({
     setWidgetInstanceKey((prev) => prev + 1);
   }, []);
 
+  // Actualizar workflow cuando cambia el agente seleccionado
+  useEffect(() => {
+    if (currentAgent.workflowId && currentAgent.workflowId !== currentWorkflowId) {
+      setCurrentWorkflowId(currentAgent.workflowId);
+      // Reiniciar el chat con el nuevo workflow
+      handleResetChat();
+    }
+  }, [currentAgent, currentWorkflowId, handleResetChat]);
+
   const getClientSecret = useCallback(
     async (currentSecret: string | null) => {
       if (isDev) {
         console.info("[ChatKitPanel] getClientSecret invoked", {
           currentSecretPresent: Boolean(currentSecret),
-          workflowId: WORKFLOW_ID,
+          workflowId: currentWorkflowId,
+          agentName: currentAgent.name,
           endpoint: CREATE_SESSION_ENDPOINT,
         });
       }
 
       if (!isWorkflowConfigured) {
-        const detail =
-          "Set NEXT_PUBLIC_CHATKIT_WORKFLOW_ID in your .env.local file.";
+        const detail = "Configure workflow IDs in your .env file.";
         if (isMountedRef.current) {
           setErrorState({ session: detail, retryable: false });
           setIsInitializingSession(false);
@@ -191,7 +211,7 @@ export function ChatKitPanel({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            workflow: { id: WORKFLOW_ID },
+            workflow: { id: currentWorkflowId },
             chatkit_configuration: {
               // enable attachments
               file_upload: {
@@ -258,7 +278,7 @@ export function ChatKitPanel({
         }
       }
     },
-    [isWorkflowConfigured, setErrorState]
+    [isWorkflowConfigured, setErrorState, currentWorkflowId, currentAgent]
   );
 
   const chatkit = useChatKit({
@@ -339,12 +359,21 @@ export function ChatKitPanel({
       hasControl: Boolean(chatkit.control),
       scriptStatus,
       hasError: Boolean(blockingError),
-      workflowId: WORKFLOW_ID,
+      workflowId: currentWorkflowId,
+      currentAgent: currentAgent.name,
     });
   }
 
   return (
     <div className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <AgentSelector
+          agents={AGENTS}
+          currentAgent={currentAgent}
+          onSelectAgent={handleSelectAgent}
+        />
+      </div>
+
       <ChatKit
         key={widgetInstanceKey}
         control={chatkit.control}
