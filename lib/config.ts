@@ -60,16 +60,16 @@ export const GREETING = "¿Cómo puedo ayudarte hoy?";
 export const getThemeConfig = (theme: ColorScheme): ThemeOption => ({
   color: {
     grayscale: {
-      hue: 220,
-      tint: 6,
-      shade: theme === "dark" ? -1 : -4,
+      hue: theme === "dark" ? 0 : 220, // 0 = grises neutros sin tinte azul
+      tint: theme === "dark" ? 0 : 5,  // 0 = sin saturación de color
+      shade: theme === "dark" ? 0 : -3, // 0 = grises puros
     },
     accent: {
-      primary: theme === "dark" ? "#f1f5f9" : "#0f172a",
-      level: 1,
+      primary: "#00DFA2", // Brand color Iddeass - verde menta
+      level: theme === "dark" ? 2 : 1,
     },
   },
   radius: "round",
-  // Add other theme options here
-  // chatkit.studio/playground to explore config options
+  // Configuración adicional para un look más moderno y elegante
+  // Visita chatkit.studio/playground para explorar más opciones
 });

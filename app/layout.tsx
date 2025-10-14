@@ -3,8 +3,26 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AgentKit demo",
-  description: "Demo of ChatKit with hosted workflow",
+  title: "Iddeass - Inteligencia Digital",
+  description: "Asistentes de IA especializados en tributación, contabilidad y automatización empresarial",
+  keywords: "IA, tributación, contabilidad, BOICAC, automatización, N8N, despachos",
+  authors: [{ name: "Iddeass" }],
+  creator: "Iddeass",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  openGraph: {
+    title: "Iddeass - Inteligencia Digital",
+    description: "Asistentes de IA especializados en tributación, contabilidad y automatización empresarial",
+    type: "website",
+    locale: "es_ES",
+  },
+  icons: {
+    icon: [
+      { url: "/imagotiponegro_iddeass.v3.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/imagotiponegro_iddeass.v3.png", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -13,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es" suppressHydrationWarning>
       <head>
         <link
           rel="preload"

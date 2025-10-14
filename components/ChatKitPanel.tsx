@@ -173,9 +173,31 @@ export function ChatKitPanel({
     if (currentAgent.workflowId && currentAgent.workflowId !== currentWorkflowId) {
       setCurrentWorkflowId(currentAgent.workflowId);
       // Reiniciar el chat con el nuevo workflow
-      handleResetChat();
+      processedFacts.current.clear();
+      if (isBrowser) {
+        setScriptStatus(
+          window.customElements?.get("openai-chatkit") ? "ready" : "pending"
+        );
+      }
+      setIsInitializingSession(true);
+      setErrors(createInitialErrors());
+      setWidgetInstanceKey((prev) => prev + 1);
     }
-  }, [currentAgent, currentWorkflowId, handleResetChat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAgent.workflowId, currentWorkflowId]);
+
+  // Reiniciar el widget cuando cambia el tema para aplicar los nuevos colores
+  const prevThemeRef = useRef<ColorScheme>(theme);
+  useEffect(() => {
+    // Solo reiniciar si el tema cambia y no es el primer render
+    if (prevThemeRef.current !== theme && widgetInstanceKey > 0) {
+      prevThemeRef.current = theme;
+      setWidgetInstanceKey((prev) => prev + 1);
+    } else {
+      // Actualizar la referencia sin reiniciar
+      prevThemeRef.current = theme;
+    }
+  }, [theme, widgetInstanceKey]);
 
   const getClientSecret = useCallback(
     async (currentSecret: string | null) => {
@@ -297,7 +319,12 @@ export function ChatKitPanel({
       placeholder: PLACEHOLDER_INPUT,
       attachments: {
         // Enable attachments
+        // IMPORTANT: OpenAI ChatKit API only supports specific file types
+        // Office files (Excel, Word, PowerPoint) are NOT supported by the ChatKit API
+        // For Excel/CSV processing, convert to text or use a custom backend
         enabled: true,
+        // Omitting 'accept' to allow all file types and let the API validate
+        // This way users can see the API error message if a file type is not supported
       },
     },
     threadItemActions: {
@@ -368,8 +395,9 @@ export function ChatKitPanel({
   // }
 
   return (
-    <div className="relative pb-8 flex h-[90vh] w-full rounded-2xl flex-col overflow-hidden bg-white shadow-sm transition-colors dark:bg-slate-900">
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+    <div className="relative flex h-full w-full rounded-3xl flex-col overflow-hidden bg-background border border-border shadow-xl transition-all duration-300">
+      {/* Agent Selector - Posicionado en la parte superior */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
         <AgentSelector
           agents={AGENTS}
           currentAgent={currentAgent}
@@ -377,24 +405,27 @@ export function ChatKitPanel({
         />
       </div>
 
+      {/* ChatKit Widget */}
       <ChatKit
         key={widgetInstanceKey}
         control={chatkit.control}
         className={
           blockingError || isInitializingSession
             ? "pointer-events-none opacity-0"
-            : "block h-full w-full"
+            : "block h-full w-full animate-fade-in"
         }
       />
+
+      {/* Error Overlay */}
       <ErrorOverlay
         error={blockingError}
         fallbackMessage={
           blockingError || !isInitializingSession
             ? null
-            : "Loading assistant session..."
+            : "Cargando sesión del asistente..."
         }
         onRetry={blockingError && errors.retryable ? handleResetChat : null}
-        retryLabel="Restart chat"
+        retryLabel="Reiniciar chat"
       />
     </div>
   );

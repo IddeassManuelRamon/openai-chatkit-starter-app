@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git clone:*)"
+      "Bash(git clone:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 10 bash -c \"until curl -s http://localhost:3000 > /dev/null; do sleep 1; done\")",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(npm view:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nadd multi-agent selector with dynamic workflow switching\n\nImplementa selector de agentes centrado que permite cambiar entre 3 workflows:\n- General: consultas variadas\n- N8N: automatizaciones\n- Despachos: gestión de despachos\n\nEl selector incluye:\n- Dropdown visual con avatares y descripciones\n- Cambio dinámico de workflow al seleccionar agente\n- Reinicio automático de sesión con nuevo workflow\n- Indicador visual del agente activo\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(xargs kill:*)",
+      "Bash(mount)",
+      "Bash(cmd.exe:*)",
+      "Bash(npm install)",
+      "Bash(taskkill:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ntraducir interfaz al español y mejorar logging\n\nTraducciones implementadas:\n- Saludo: \"¿Cómo puedo ayudarte hoy?\"\n- Placeholder del input: \"Pregunta lo que quieras...\"\n- Prompt inicial: \"¿Qué puedes hacer?\"\n\nMejoras adicionales:\n- Comentar logs de debug en ChatKitPanel para evitar ruido en consola\n- Añadir logging mejorado en create-session para diagnóstico de errores\n- Incluir workflowId y apiKey info en logs de error\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nañadir agente Experto en Tributos al selector\n\nNuevo agente especializado en tributación:\n- ID: tributos\n- Nombre: Experto en Tributos\n- Descripción: Especialista en tributación y normativa fiscal\n- Workflow ID: NEXT_PUBLIC_EXPERTO_TRIBUTOS_ID\n\nEl agente aparece en el selector junto con General, N8N y Despachos.\nAl seleccionarlo, el chat se reinicia con el workflow de tributos.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(timeout:*)",
+      "Bash(dir:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

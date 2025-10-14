@@ -1,34 +1,145 @@
 @import "tailwindcss";
 
+/* Paleta de colores Iddeass */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand Colors */
+  --brand-primary: #00DFA2;
+  --brand-primary-light: #33E9B5;
+  --brand-primary-dark: #00B581;
+
+  /* Light Theme */
+  --background: #FFFFFF;
+  --background-secondary: #F8FAFB;
+  --background-tertiary: #F1F5F9;
+  --foreground: #0F172A;
+  --foreground-secondary: #334155;
+  --foreground-muted: #64748B;
+
+  /* Borders & Dividers */
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
+
+  /* Surfaces */
+  --surface: #FFFFFF;
+  --surface-hover: #F8FAFB;
+  --surface-elevated: #FFFFFF;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
   color-scheme: light;
 }
 
-:root[data-color-scheme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  color-scheme: dark;
-}
+/* Dark Theme - usando data-color-scheme y clase .dark */
+:root[data-color-scheme="dark"],
+:root.dark,
+.dark {
+  /* Dark Theme - Tonos de negro más suaves */
+  --background: #1C1C1E;
+  --background-secondary: #2C2C2E;
+  --background-tertiary: #3A3A3C;
+  --foreground: #F5F5F7;
+  --foreground-secondary: #D1D1D6;
+  --foreground-muted: #98989D;
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-color-scheme]) {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    color-scheme: dark;
-  }
+  /* Borders & Dividers */
+  --border: #38383A;
+  --border-hover: #48484A;
+
+  /* Surfaces */
+  --surface: #2C2C2E;
+  --surface-hover: #3A3A3C;
+  --surface-elevated: #3A3A3C;
+
+  /* Shadows for dark mode - más sutiles */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --color-brand-primary: var(--brand-primary);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+}
+
+/* Reset y estilos base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 5px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-muted);
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
 }
