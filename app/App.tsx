@@ -1,13 +1,23 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ChatKitPanel, type FactAction } from "@/components/ChatKitPanel";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Header } from "@/components/Header";
+import { useAuth } from "@/contexts/AuthContext";
 
 function AppContent() {
   const { scheme, setScheme } = useColorScheme();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
 
   const handleWidgetAction = useCallback(async (action: FactAction) => {
     if (process.env.NODE_ENV !== "production") {
@@ -20,6 +30,23 @@ function AppContent() {
       console.debug("[ChatKitPanel] response end");
     }
   }, []);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background-secondary">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-green-500 border-r-transparent"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay usuario, no renderizar nada (se redirigirá)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background-secondary">

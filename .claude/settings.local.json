@@ -23,7 +23,10 @@
       "Bash(dir:*)",
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
