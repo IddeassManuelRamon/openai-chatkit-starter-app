@@ -21,6 +21,8 @@ function onOpen() {
   DocumentApp.getUi()
     .createMenu('ChatKit AI')
     .addItem('Abrir Chat', 'showChatSidebar')
+    .addSeparator()
+    .addItem('🔍 Diagnóstico', 'showDiagnostic')
     .addItem('Configuración', 'showSettings')
     .addToUi();
 }
@@ -45,6 +47,17 @@ function showSettings() {
     .setHeight(300);
 
   DocumentApp.getUi().showModalDialog(html, 'Configuración de ChatKit');
+}
+
+/**
+ * Muestra el panel de diagnóstico
+ */
+function showDiagnostic() {
+  const html = HtmlService.createHtmlOutputFromFile('DiagnosticPanel')
+    .setTitle('Diagnóstico de ChatKit')
+    .setWidth(450);
+
+  DocumentApp.getUi().showSidebar(html);
 }
 
 /**
@@ -95,12 +108,43 @@ function createChatKitSession() {
     // Hacer la solicitud a la API
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
-    const responseBody = JSON.parse(response.getContentText());
+
+    let responseBody;
+    try {
+      responseBody = JSON.parse(response.getContentText());
+    } catch (e) {
+      responseBody = { error: response.getContentText() };
+    }
 
     // Manejar errores
     if (responseCode !== 200) {
-      console.error('Error creando sesión:', responseBody);
-      throw new Error(`Error de OpenAI API: ${responseBody.error || response.getContentText()}`);
+      console.error('Error creando sesión:', responseCode, responseBody);
+
+      // Extraer mensaje de error detallado
+      let errorMessage = 'Error desconocido';
+
+      if (responseBody.error) {
+        if (typeof responseBody.error === 'string') {
+          errorMessage = responseBody.error;
+        } else if (responseBody.error.message) {
+          errorMessage = responseBody.error.message;
+        }
+      } else if (responseBody.message) {
+        errorMessage = responseBody.message;
+      }
+
+      // Detectar problemas comunes
+      const errorLower = errorMessage.toLowerCase();
+      if (errorLower.includes('domain') || errorLower.includes('allowlist') ||
+          errorLower.includes('cors') || errorLower.includes('origin')) {
+        errorMessage = `ALLOWLIST ERROR: ${errorMessage}. Necesitas añadir el dominio de Google Apps Script a la allowlist en platform.openai.com/settings/organization/security/domain-allowlist`;
+      } else if (responseCode === 401) {
+        errorMessage = `API KEY ERROR: ${errorMessage}. Verifica que tu API key sea válida.`;
+      } else if (responseCode === 404) {
+        errorMessage = `WORKFLOW ERROR: ${errorMessage}. Verifica que el Workflow ID sea correcto.`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     // Retornar el client_secret y expires_after

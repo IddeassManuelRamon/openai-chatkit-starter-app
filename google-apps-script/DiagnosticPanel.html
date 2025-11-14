@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit Diagnóstico</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f5f5;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .step {
+      background: white;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      background: #999;
+    }
+
+    .step.loading .step-number {
+      background: #2196f3;
+      animation: pulse 1.5s infinite;
+    }
+
+    .step.success .step-number {
+      background: #4caf50;
+    }
+
+    .step.error .step-number {
+      background: #f44336;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .step-detail {
+      margin-left: 44px;
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .error-detail {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #c62828;
+      word-wrap: break-word;
+    }
+
+    .success-detail {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #2e7d32;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    button {
+      background: #2196f3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #1976d2;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #2196f3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .json-viewer {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      overflow-x: auto;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔍 Diagnóstico de ChatKit</h2>
+
+  <div class="info-box">
+    ℹ️ Esta herramienta te ayudará a identificar por qué el chat no carga correctamente.
+  </div>
+
+  <div id="steps"></div>
+
+  <div id="allowlist-warning" style="display: none;">
+    <div class="warning-box">
+      <strong>⚠️ Problema de Allowlist Detectado</strong>
+      <p>El dominio de Google Apps Script necesita estar en la lista de dominios permitidos de OpenAI.</p>
+      <p><strong>Dominios que necesitas añadir:</strong></p>
+      <ul id="domains-list"></ul>
+      <p><strong>Cómo solucionarlo:</strong></p>
+      <ol>
+        <li>Ve a <a href="https://platform.openai.com/settings/organization/security/domain-allowlist" target="_blank">Domain Allowlist en OpenAI</a></li>
+        <li>Haz clic en "Add domain"</li>
+        <li>Añade cada uno de los dominios listados arriba</li>
+        <li>Espera unos minutos a que se propague el cambio</li>
+        <li>Vuelve a ejecutar este diagnóstico</li>
+      </ol>
+    </div>
+  </div>
+
+  <button id="retry-btn" onclick="runDiagnostic()" style="display: none;">
+    🔄 Volver a intentar
+  </button>
+
+  <script>
+    const steps = [
+      { id: 'config', title: 'Verificar configuración', status: 'pending' },
+      { id: 'session', title: 'Crear sesión de ChatKit', status: 'pending' },
+      { id: 'chatkit', title: 'Cargar componente ChatKit', status: 'pending' },
+      { id: 'initialize', title: 'Inicializar chat', status: 'pending' }
+    ];
+
+    let sessionResult = null;
+    let currentOrigin = window.location.origin;
+    let currentHostname = window.location.hostname;
+
+    function renderSteps() {
+      const container = document.getElementById('steps');
+      container.innerHTML = steps.map(step => `
+        <div class="step ${step.status}" id="step-${step.id}">
+          <div class="step-header">
+            <div class="step-number">${step.status === 'loading' ? '<div class="spinner"></div>' : steps.indexOf(step) + 1}</div>
+            <div class="step-title">${step.title}</div>
+          </div>
+          <div class="step-detail" id="detail-${step.id}"></div>
+        </div>
+      `).join('');
+    }
+
+    function updateStep(id, status, detail, isError = false) {
+      const step = steps.find(s => s.id === id);
+      if (step) {
+        step.status = status;
+        renderSteps();
+
+        const detailEl = document.getElementById(`detail-${id}`);
+        if (detail) {
+          if (isError) {
+            detailEl.innerHTML = `<div class="error-detail">${detail}</div>`;
+          } else if (status === 'success') {
+            detailEl.innerHTML = `<div class="success-detail">${detail}</div>`;
+          } else {
+            detailEl.textContent = detail;
+          }
+        }
+      }
+    }
+
+    async function runDiagnostic() {
+      document.getElementById('retry-btn').style.display = 'none';
+      document.getElementById('allowlist-warning').style.display = 'none';
+
+      // Reset steps
+      steps.forEach(s => s.status = 'pending');
+      renderSteps();
+
+      // Step 1: Verificar configuración
+      updateStep('config', 'loading', 'Verificando configuración del servidor...');
+
+      try {
+        const config = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .getConfig();
+        });
+
+        if (!config.hasApiKey) {
+          updateStep('config', 'error', 'OPENAI_API_KEY no está configurada. Ve a Code.gs y configura tu API key.', true);
+          document.getElementById('retry-btn').style.display = 'block';
+          return;
+        }
+
+        if (!config.hasWorkflowId) {
+          updateStep('config', 'error', 'WORKFLOW_ID no está configurado. Ve a Code.gs y configura tu Workflow ID.', true);
+          document.getElementById('retry-btn').style.display = 'block';
+          return;
+        }
+
+        updateStep('config', 'success', `✓ API Key configurada\n✓ Workflow ID: ${config.workflowId}`);
+
+        // Step 2: Crear sesión
+        updateStep('session', 'loading', 'Llamando a la API de OpenAI...');
+
+        sessionResult = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .createChatKitSession();
+        });
+
+        if (!sessionResult.success) {
+          let errorMsg = sessionResult.error || 'Error desconocido';
+          let errorDetail = `<strong>Error:</strong> ${errorMsg}`;
+
+          // Detectar errores comunes
+          if (errorMsg.includes('domain') || errorMsg.includes('allowlist') || errorMsg.includes('CORS')) {
+            errorDetail += `<br><br><strong>🚨 Problema de Domain Allowlist</strong><br>El dominio de Google Apps Script no está autorizado.`;
+            showAllowlistWarning();
+          } else if (errorMsg.includes('API key')) {
+            errorDetail += `<br><br><strong>Sugerencia:</strong> Verifica que tu API key sea válida y esté activa en platform.openai.com`;
+          } else if (errorMsg.includes('workflow')) {
+            errorDetail += `<br><br><strong>Sugerencia:</strong> Verifica que el Workflow ID sea correcto y esté publicado en Agent Builder`;
+          }
+
+          updateStep('session', 'error', errorDetail, true);
+          document.getElementById('retry-btn').style.display = 'block';
+          return;
+        }
+
+        updateStep('session', 'success', `✓ Sesión creada exitosamente\n✓ Client secret obtenido\n✓ Expira: ${sessionResult.expires_after}`);
+
+        // Step 3: Cargar ChatKit
+        updateStep('chatkit', 'loading', 'Cargando biblioteca ChatKit desde CDN...');
+
+        try {
+          // Intentar cargar el script de ChatKit
+          await loadChatKitScript();
+          updateStep('chatkit', 'success', '✓ Componente ChatKit cargado correctamente');
+
+          // Step 4: Inicializar
+          updateStep('initialize', 'loading', 'Inicializando componente...');
+
+          // Crear el elemento chatkit para probar
+          const testElement = document.createElement('openai-chatkit');
+          testElement.style.display = 'none';
+          document.body.appendChild(testElement);
+
+          // Darle un momento para inicializarse
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          if (testElement.clientSecret !== undefined) {
+            testElement.clientSecret = sessionResult.client_secret;
+            updateStep('initialize', 'success', '✓ ChatKit inicializado correctamente\n✓ Todo está funcionando bien!');
+
+            // Mostrar info de éxito
+            const successBox = document.createElement('div');
+            successBox.className = 'success-detail';
+            successBox.style.marginTop = '20px';
+            successBox.innerHTML = `
+              <strong>✅ ¡Diagnóstico completado exitosamente!</strong><br>
+              ChatKit debería funcionar correctamente. Si aún ves una pantalla en blanco,
+              intenta cerrar y volver a abrir el panel de chat.
+            `;
+            document.getElementById('steps').appendChild(successBox);
+          } else {
+            throw new Error('El componente ChatKit no se inicializó correctamente');
+          }
+
+        } catch (error) {
+          updateStep('chatkit', 'error', `Error al cargar ChatKit: ${error.message}`, true);
+          document.getElementById('retry-btn').style.display = 'block';
+          return;
+        }
+
+      } catch (error) {
+        console.error('Error en diagnóstico:', error);
+        updateStep('config', 'error', `Error inesperado: ${error.message || error.toString()}`, true);
+        document.getElementById('retry-btn').style.display = 'block';
+      }
+    }
+
+    function loadChatKitScript() {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'https://cdn.jsdelivr.net/npm/@openai/chatkit@0.3/dist/chatkit.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('No se pudo cargar el script de ChatKit desde el CDN'));
+        document.head.appendChild(script);
+      });
+    }
+
+    function showAllowlistWarning() {
+      const warning = document.getElementById('allowlist-warning');
+      const domainsList = document.getElementById('domains-list');
+
+      // Lista de dominios comunes de Google Apps Script
+      const domains = [
+        currentHostname,
+        '*.googleusercontent.com',
+        'script.google.com',
+        '*.script.google.com'
+      ];
+
+      domainsList.innerHTML = domains.map(d => `<li><code>${d}</code></li>`).join('');
+      warning.style.display = 'block';
+    }
+
+    // Mostrar información del entorno
+    console.log('Diagnóstico de ChatKit - Información del entorno:');
+    console.log('Origin:', currentOrigin);
+    console.log('Hostname:', currentHostname);
+    console.log('User Agent:', navigator.userAgent);
+
+    // Inicializar
+    renderSteps();
+    runDiagnostic();
+  </script>
+</body>
+</html>
