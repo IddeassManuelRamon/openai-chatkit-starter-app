@@ -10,8 +10,10 @@
 // Configuración - IMPORTANTE: Reemplaza estos valores con los tuyos
 const CONFIG = {
   OPENAI_API_KEY: 'tu-api-key-aqui', // Obtén tu API key de https://platform.openai.com/api-keys
-  WORKFLOW_ID: 'tu-workflow-id-aqui', // Obtén tu workflow ID de Agent Builder
-  CHATKIT_API_BASE: 'https://api.openai.com'
+  WORKFLOW_ID: 'tu-workflow-id-aqui', // Obtén tu workflow ID de Agent Builder (OPCIONAL - solo si usas ChatKit original)
+  CHATKIT_API_BASE: 'https://api.openai.com',
+  CHAT_MODEL: 'gpt-4o-mini', // Modelo a usar: 'gpt-4o-mini' (rápido/económico) o 'gpt-4o' (mejor calidad)
+  SYSTEM_PROMPT: 'Eres un asistente útil que ayuda a los usuarios con sus documentos de Google Docs.' // Personaliza el comportamiento del asistente
 };
 
 /**
@@ -62,6 +64,8 @@ function showDiagnostic() {
 
 /**
  * Crea una sesión de ChatKit llamando a la API de OpenAI
+ * NOTA: Esta función ahora solo valida la configuración básica.
+ * El chat usa directamente la API de Chat Completions, no requiere workflow.
  *
  * @returns {Object} Objeto con client_secret y expires_after
  */
@@ -72,8 +76,19 @@ function createChatKitSession() {
       throw new Error('Por favor configura tu OPENAI_API_KEY en el archivo Code.gs');
     }
 
-    if (!CONFIG.WORKFLOW_ID || CONFIG.WORKFLOW_ID === 'tu-workflow-id-aqui') {
-      throw new Error('Por favor configura tu WORKFLOW_ID en el archivo Code.gs');
+    // El WORKFLOW_ID ahora es opcional - solo se necesita si quieres usar ChatKit original
+    // Para la versión simple con Chat Completions, solo necesitas la API key
+    const useSimpleMode = !CONFIG.WORKFLOW_ID || CONFIG.WORKFLOW_ID === 'tu-workflow-id-aqui';
+
+    if (useSimpleMode) {
+      // Modo simple: no requiere workflow, solo API key
+      Logger.log('Usando modo simple con Chat Completions API');
+      return {
+        success: true,
+        client_secret: 'simple-mode-' + Utilities.getUuid(),
+        expires_after: new Date(Date.now() + 86400000).toISOString(), // 24 horas
+        mode: 'simple'
+      };
     }
 
     // Generar un ID de usuario único para esta sesión
@@ -164,17 +179,18 @@ function createChatKitSession() {
 }
 
 /**
- * Envía un mensaje al chat de ChatKit
+ * Envía un mensaje al chat usando la API de OpenAI Chat Completions
  *
- * @param {string} clientSecret - El client secret de la sesión
+ * @param {string} sessionId - ID de sesión (no se usa, pero se mantiene por compatibilidad)
  * @param {string} message - El mensaje del usuario
  * @param {Array} history - Historial de conversación (opcional)
  * @returns {Object} Respuesta con el mensaje del asistente
  */
-function sendChatMessage(clientSecret, message, history) {
+function sendChatMessage(sessionId, message, history) {
   try {
-    if (!clientSecret) {
-      throw new Error('No hay una sesión activa');
+    // Validar configuración
+    if (!CONFIG.OPENAI_API_KEY || CONFIG.OPENAI_API_KEY === 'tu-api-key-aqui') {
+      throw new Error('Por favor configura tu OPENAI_API_KEY en el archivo Code.gs');
     }
 
     if (!message || !message.trim()) {
@@ -183,25 +199,37 @@ function sendChatMessage(clientSecret, message, history) {
 
     // Construir el historial de mensajes
     const messages = history || [];
+
+    // Si es el primer mensaje, añadir el system prompt
+    if (messages.length === 0 && CONFIG.SYSTEM_PROMPT) {
+      messages.push({
+        role: 'system',
+        content: CONFIG.SYSTEM_PROMPT
+      });
+    }
+
+    // Añadir mensaje del usuario
     messages.push({
       role: 'user',
       content: message
     });
 
-    // Llamar a la API de ChatKit para enviar el mensaje
+    // Llamar a la API de Chat Completions de OpenAI
     const apiBase = CONFIG.CHATKIT_API_BASE || 'https://api.openai.com';
-    const url = `${apiBase}/v1/chatkit/messages`;
+    const url = `${apiBase}/v1/chat/completions`;
 
     const payload = {
-      messages: messages
+      model: CONFIG.CHAT_MODEL || 'gpt-4o-mini',
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 2000
     };
 
     const options = {
       method: 'post',
       contentType: 'application/json',
       headers: {
-        'Authorization': `Bearer ${clientSecret}`,
-        'OpenAI-Beta': 'chatkit_beta=v1'
+        'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`
       },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
@@ -246,12 +274,6 @@ function sendChatMessage(clientSecret, message, history) {
           content: assistantMessage
         });
       }
-    } else if (responseBody.message) {
-      assistantMessage = responseBody.message;
-      messages.push({
-        role: 'assistant',
-        content: assistantMessage
-      });
     }
 
     return {
