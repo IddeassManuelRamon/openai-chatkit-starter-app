@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+      font-size: 20px;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .config-item {
+      margin-bottom: 16px;
+    }
+
+    .config-item label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .config-item input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      box-sizing: border-box;
+    }
+
+    .config-item .help-text {
+      font-size: 12px;
+      color: #777;
+      margin-top: 4px;
+    }
+
+    .config-item .help-text a {
+      color: #2196f3;
+      text-decoration: none;
+    }
+
+    .config-item .help-text a:hover {
+      text-decoration: underline;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .status.ok {
+      background: #4caf50;
+      color: white;
+    }
+
+    .status.error {
+      background: #f44336;
+      color: white;
+    }
+
+    .buttons {
+      margin-top: 24px;
+      text-align: right;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: #2196f3;
+      color: white;
+      font-weight: 600;
+    }
+
+    button.primary:hover {
+      background: #1976d2;
+    }
+
+    button.secondary {
+      background: #e0e0e0;
+      color: #333;
+      margin-right: 8px;
+    }
+
+    button.secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .instructions {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .instructions h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .instructions ol {
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin-bottom: 12px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .instructions code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Configuración de ChatKit</h2>
+
+    <div class="info-box">
+      ℹ️ Esta configuración se guarda directamente en el archivo <code>Code.gs</code>.
+      Necesitas editar el código para cambiar estas credenciales.
+    </div>
+
+    <div id="status-container"></div>
+
+    <div class="config-item">
+      <label>
+        OpenAI API Key
+        <span id="api-key-status"></span>
+      </label>
+      <input type="password" id="api-key" readonly placeholder="Configura en Code.gs">
+      <div class="help-text">
+        Obtén tu API key en <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>
+      </div>
+    </div>
+
+    <div class="config-item">
+      <label>
+        Workflow ID
+        <span id="workflow-status"></span>
+      </label>
+      <input type="text" id="workflow-id" readonly placeholder="Configura en Code.gs">
+      <div class="help-text">
+        Crea un workflow en <a href="https://platform.openai.com/agent-builder" target="_blank">Agent Builder</a> y copia el ID
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="secondary" onclick="google.script.host.close()">Cerrar</button>
+      <button class="primary" onclick="openEditor()">Abrir Editor de Script</button>
+    </div>
+
+    <div class="instructions">
+      <h3>📋 Instrucciones de configuración:</h3>
+      <ol>
+        <li>Haz clic en <strong>"Abrir Editor de Script"</strong> arriba</li>
+        <li>En el archivo <code>Code.gs</code>, encuentra la sección <code>CONFIG</code></li>
+        <li>Reemplaza <code>'tu-api-key-aqui'</code> con tu API key de OpenAI</li>
+        <li>Reemplaza <code>'tu-workflow-id-aqui'</code> con tu Workflow ID de Agent Builder</li>
+        <li>Guarda el archivo (Ctrl+S o Cmd+S)</li>
+        <li>Cierra este diálogo y vuelve a abrir ChatKit desde el menú</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // Cargar configuración actual
+    google.script.run
+      .withSuccessHandler(displayConfig)
+      .getConfig();
+
+    function displayConfig(config) {
+      const apiKeyInput = document.getElementById('api-key');
+      const workflowInput = document.getElementById('workflow-id');
+      const apiKeyStatus = document.getElementById('api-key-status');
+      const workflowStatus = document.getElementById('workflow-status');
+
+      // Mostrar estado de API Key
+      if (config.hasApiKey) {
+        apiKeyInput.value = '••••••••••••••••';
+        apiKeyStatus.innerHTML = '<span class="status ok">✓ Configurada</span>';
+      } else {
+        apiKeyInput.value = '';
+        apiKeyStatus.innerHTML = '<span class="status error">✗ No configurada</span>';
+      }
+
+      // Mostrar estado de Workflow ID
+      if (config.hasWorkflowId) {
+        workflowInput.value = config.workflowId;
+        workflowStatus.innerHTML = '<span class="status ok">✓ Configurado</span>';
+      } else {
+        workflowInput.value = '';
+        workflowStatus.innerHTML = '<span class="status error">✗ No configurado</span>';
+      }
+
+      // Mostrar advertencia si falta configuración
+      if (!config.hasApiKey || !config.hasWorkflowId) {
+        const statusContainer = document.getElementById('status-container');
+        statusContainer.innerHTML = `
+          <div class="warning-box">
+            ⚠️ <strong>Configuración incompleta:</strong> Por favor, configura las credenciales en el archivo Code.gs
+          </div>
+        `;
+      }
+    }
+
+    function openEditor() {
+      alert('El editor de Apps Script se abrirá en una nueva ventana.\n\nBusca el archivo "Code.gs" y edita la sección CONFIG cerca del inicio del archivo.');
+      // Cerrar el diálogo
+      google.script.host.close();
+    }
+  </script>
+</body>
+</html>

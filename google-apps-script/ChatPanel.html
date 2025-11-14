@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit AI Assistant</title>
+
+  <!-- Importar ChatKit desde el CDN de OpenAI -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@openai/chatkit@0.3/dist/chatkit.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      gap: 16px;
+      color: #666;
+    }
+
+    #error {
+      display: none;
+      padding: 20px;
+      background: #fee;
+      border-left: 4px solid #f00;
+      margin: 20px;
+      border-radius: 4px;
+    }
+
+    #error-message {
+      color: #c00;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    #chatkit-container {
+      display: none;
+      height: 100vh;
+    }
+
+    openai-chatkit {
+      width: 100%;
+      height: 100%;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toolbar {
+      padding: 12px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button {
+      padding: 8px 16px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .toolbar button:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+
+    .toolbar button:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Estado de carga -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Iniciando ChatKit...</p>
+  </div>
+
+  <!-- Estado de error -->
+  <div id="error">
+    <p id="error-message"></p>
+  </div>
+
+  <!-- Contenedor del chat -->
+  <div id="chatkit-container">
+    <div class="toolbar">
+      <button onclick="insertSelectedText()">📝 Usar texto seleccionado</button>
+      <button onclick="refreshChat()">🔄 Reiniciar chat</button>
+    </div>
+    <openai-chatkit
+      id="chatkit"
+      greeting="¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte hoy?"
+      placeholder="Escribe tu mensaje aquí..."
+      theme-color="slate">
+    </openai-chatkit>
+  </div>
+
+  <script>
+    let chatkitElement = null;
+
+    /**
+     * Inicializa el componente ChatKit
+     */
+    async function initChatKit() {
+      try {
+        // Crear una sesión llamando al backend de Apps Script
+        const sessionResult = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .createChatKitSession();
+        });
+
+        // Verificar si hubo un error
+        if (!sessionResult.success) {
+          throw new Error(sessionResult.error);
+        }
+
+        // Obtener el elemento chatkit
+        chatkitElement = document.getElementById('chatkit');
+
+        if (!chatkitElement) {
+          throw new Error('No se pudo encontrar el elemento chatkit');
+        }
+
+        // Configurar el client secret
+        chatkitElement.clientSecret = sessionResult.client_secret;
+
+        // Configurar el tema
+        chatkitElement.theme = {
+          color: {
+            grayscale: {
+              hue: 220,
+              tint: 6,
+              shade: -1
+            },
+            accent: {
+              primary: '#0f172a',
+              level: 1
+            }
+          },
+          radius: 'round'
+        };
+
+        // Configurar prompts iniciales
+        chatkitElement.starterPrompts = [
+          {
+            label: '¿Qué puedes hacer?',
+            prompt: '¿Qué puedes hacer?',
+            icon: 'circle-question'
+          },
+          {
+            label: 'Ayúdame a escribir',
+            prompt: 'Ayúdame a mejorar este texto',
+            icon: 'pen'
+          },
+          {
+            label: 'Resume esto',
+            prompt: 'Resume el siguiente texto en puntos clave',
+            icon: 'list'
+          }
+        ];
+
+        // Escuchar eventos del chat
+        chatkitElement.addEventListener('message-sent', (event) => {
+          console.log('Mensaje enviado:', event.detail);
+        });
+
+        chatkitElement.addEventListener('message-received', (event) => {
+          console.log('Mensaje recibido:', event.detail);
+        });
+
+        // Mostrar el chat y ocultar el loading
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('chatkit-container').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error inicializando ChatKit:', error);
+        showError(error.message || error.toString());
+      }
+    }
+
+    /**
+     * Muestra un mensaje de error
+     */
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-message').textContent = message;
+    }
+
+    /**
+     * Inserta el texto seleccionado del documento en el chat
+     */
+    function insertSelectedText() {
+      google.script.run
+        .withSuccessHandler((selectedText) => {
+          if (selectedText && selectedText.trim()) {
+            // Si hay un elemento chatkit y texto seleccionado
+            if (chatkitElement) {
+              // Obtener el input del chat y establecer el valor
+              const input = chatkitElement.shadowRoot?.querySelector('textarea') ||
+                           chatkitElement.shadowRoot?.querySelector('input');
+
+              if (input) {
+                const currentValue = input.value || '';
+                const newValue = currentValue
+                  ? `${currentValue}\n\n${selectedText}`
+                  : selectedText;
+
+                input.value = newValue;
+                input.focus();
+
+                // Disparar evento de input para que ChatKit detecte el cambio
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            }
+          } else {
+            alert('Por favor, selecciona texto en el documento primero.');
+          }
+        })
+        .withFailureHandler((error) => {
+          alert('Error al obtener el texto: ' + error.message);
+        })
+        .getSelectedText();
+    }
+
+    /**
+     * Reinicia el chat creando una nueva sesión
+     */
+    function refreshChat() {
+      if (confirm('¿Quieres reiniciar el chat? Se perderá el historial actual.')) {
+        document.getElementById('chatkit-container').style.display = 'none';
+        document.getElementById('loading').style.display = 'flex';
+        initChatKit();
+      }
+    }
+
+    // Inicializar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initChatKit);
+    } else {
+      initChatKit();
+    }
+  </script>
+</body>
+</html>
