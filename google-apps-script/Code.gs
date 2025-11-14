@@ -31,7 +31,7 @@ function onOpen() {
  * Muestra el panel lateral con el chat de ChatKit
  */
 function showChatSidebar() {
-  const html = HtmlService.createHtmlOutputFromFile('ChatPanel')
+  const html = HtmlService.createHtmlOutputFromFile('ChatPanelSimple')
     .setTitle('ChatKit AI Assistant')
     .setWidth(400);
 
@@ -156,6 +156,112 @@ function createChatKitSession() {
 
   } catch (error) {
     console.error('Error en createChatKitSession:', error);
+    return {
+      success: false,
+      error: error.message || error.toString()
+    };
+  }
+}
+
+/**
+ * Envía un mensaje al chat de ChatKit
+ *
+ * @param {string} clientSecret - El client secret de la sesión
+ * @param {string} message - El mensaje del usuario
+ * @param {Array} history - Historial de conversación (opcional)
+ * @returns {Object} Respuesta con el mensaje del asistente
+ */
+function sendChatMessage(clientSecret, message, history) {
+  try {
+    if (!clientSecret) {
+      throw new Error('No hay una sesión activa');
+    }
+
+    if (!message || !message.trim()) {
+      throw new Error('El mensaje no puede estar vacío');
+    }
+
+    // Construir el historial de mensajes
+    const messages = history || [];
+    messages.push({
+      role: 'user',
+      content: message
+    });
+
+    // Llamar a la API de ChatKit para enviar el mensaje
+    const apiBase = CONFIG.CHATKIT_API_BASE || 'https://api.openai.com';
+    const url = `${apiBase}/v1/chatkit/messages`;
+
+    const payload = {
+      messages: messages
+    };
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'Authorization': `Bearer ${clientSecret}`,
+        'OpenAI-Beta': 'chatkit_beta=v1'
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+
+    let responseBody;
+    try {
+      responseBody = JSON.parse(response.getContentText());
+    } catch (e) {
+      responseBody = { error: response.getContentText() };
+    }
+
+    if (responseCode !== 200) {
+      console.error('Error enviando mensaje:', responseCode, responseBody);
+
+      let errorMessage = 'Error al enviar mensaje';
+      if (responseBody.error) {
+        if (typeof responseBody.error === 'string') {
+          errorMessage = responseBody.error;
+        } else if (responseBody.error.message) {
+          errorMessage = responseBody.error.message;
+        }
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Extraer el mensaje del asistente
+    let assistantMessage = 'Lo siento, no pude generar una respuesta.';
+
+    if (responseBody.choices && responseBody.choices.length > 0) {
+      const choice = responseBody.choices[0];
+      if (choice.message && choice.message.content) {
+        assistantMessage = choice.message.content;
+
+        // Añadir al historial
+        messages.push({
+          role: 'assistant',
+          content: assistantMessage
+        });
+      }
+    } else if (responseBody.message) {
+      assistantMessage = responseBody.message;
+      messages.push({
+        role: 'assistant',
+        content: assistantMessage
+      });
+    }
+
+    return {
+      success: true,
+      message: assistantMessage,
+      history: messages
+    };
+
+  } catch (error) {
+    console.error('Error en sendChatMessage:', error);
     return {
       success: false,
       error: error.message || error.toString()

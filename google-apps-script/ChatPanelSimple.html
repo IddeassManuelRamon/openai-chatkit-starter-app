@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatKit AI Assistant</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      gap: 16px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #2196f3;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #error {
+      display: none;
+      padding: 20px;
+      background: #fee;
+      border-left: 4px solid #f44336;
+      margin: 20px;
+      border-radius: 4px;
+    }
+
+    #chat-container {
+      display: none;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      padding: 12px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .toolbar button {
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toolbar button:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #ffffff;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .message.user .message-avatar {
+      background: #2196f3;
+      color: white;
+    }
+
+    .message.assistant .message-avatar {
+      background: #4caf50;
+      color: white;
+    }
+
+    .message-content {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .message.user .message-content {
+      background: #2196f3;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-content {
+      background: #f5f5f5;
+      color: #333;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.system .message-content {
+      background: #fff3cd;
+      color: #856404;
+      max-width: 100%;
+      text-align: center;
+      border-radius: 6px;
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+
+    .message.system .message-avatar {
+      display: none;
+    }
+
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      width: fit-content;
+    }
+
+    .typing-indicator.active {
+      display: block;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+
+    #input-container {
+      padding: 16px;
+      background: #ffffff;
+      border-top: 1px solid #e0e0e0;
+      flex-shrink: 0;
+    }
+
+    #input-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #d0d0d0;
+      border-radius: 24px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      outline: none;
+    }
+
+    #message-input:focus {
+      border-color: #2196f3;
+    }
+
+    #send-btn {
+      padding: 12px 24px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    #send-btn:hover:not(:disabled) {
+      background: #1976d2;
+    }
+
+    #send-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .starter-prompts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px;
+    }
+
+    .starter-prompt {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .starter-prompt:hover {
+      background: #e3f2fd;
+      border-color: #2196f3;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading state -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Iniciando chat...</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="error">
+    <p id="error-message"></p>
+  </div>
+
+  <!-- Chat container -->
+  <div id="chat-container">
+    <div class="toolbar">
+      <button onclick="insertSelectedText()">📝 Usar texto seleccionado</button>
+      <button onclick="clearChat()">🗑️ Limpiar chat</button>
+    </div>
+
+    <div id="messages">
+      <div class="message system">
+        <div class="message-content">
+          ¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte hoy?
+        </div>
+      </div>
+
+      <div class="starter-prompts" id="starter-prompts">
+        <button class="starter-prompt" onclick="sendPrompt('¿Qué puedes hacer?')">
+          ❓ ¿Qué puedes hacer?
+        </button>
+        <button class="starter-prompt" onclick="sendPrompt('Ayúdame a mejorar este documento')">
+          ✍️ Ayúdame a mejorar este documento
+        </button>
+        <button class="starter-prompt" onclick="sendPrompt('Resume los puntos clave')">
+          📋 Resume los puntos clave
+        </button>
+      </div>
+
+      <div class="message assistant" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="typing-indicator" id="typing-indicator">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="input-container">
+      <form id="input-form" onsubmit="sendMessage(event)">
+        <textarea
+          id="message-input"
+          placeholder="Escribe tu mensaje aquí..."
+          rows="1"
+          onkeydown="handleKeyPress(event)"
+        ></textarea>
+        <button type="submit" id="send-btn">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let clientSecret = null;
+    let conversationHistory = [];
+    let isWaitingForResponse = false;
+
+    /**
+     * Initialize the chat
+     */
+    async function initChat() {
+      try {
+        // Create session
+        const sessionResult = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .createChatKitSession();
+        });
+
+        if (!sessionResult.success) {
+          throw new Error(sessionResult.error);
+        }
+
+        clientSecret = sessionResult.client_secret;
+
+        // Show chat interface
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('chat-container').style.display = 'flex';
+        document.getElementById('message-input').focus();
+
+      } catch (error) {
+        console.error('Error initializing chat:', error);
+        showError(error.message || error.toString());
+      }
+    }
+
+    /**
+     * Send a message
+     */
+    async function sendMessage(event) {
+      if (event) event.preventDefault();
+
+      const input = document.getElementById('message-input');
+      const message = input.value.trim();
+
+      if (!message || isWaitingForResponse) return;
+
+      // Hide starter prompts
+      const starterPrompts = document.getElementById('starter-prompts');
+      if (starterPrompts) starterPrompts.style.display = 'none';
+
+      // Add user message to UI
+      addMessage('user', message);
+
+      // Clear input
+      input.value = '';
+      input.style.height = 'auto';
+
+      // Show typing indicator
+      showTypingIndicator();
+
+      // Disable input
+      isWaitingForResponse = true;
+      document.getElementById('send-btn').disabled = true;
+
+      try {
+        // Send to backend
+        const response = await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .sendChatMessage(clientSecret, message, conversationHistory);
+        });
+
+        hideTypingIndicator();
+
+        if (response.success) {
+          addMessage('assistant', response.message);
+          conversationHistory = response.history;
+        } else {
+          throw new Error(response.error);
+        }
+
+      } catch (error) {
+        hideTypingIndicator();
+        addMessage('system', '❌ Error: ' + error.message);
+        console.error('Error sending message:', error);
+      } finally {
+        isWaitingForResponse = false;
+        document.getElementById('send-btn').disabled = false;
+        input.focus();
+      }
+    }
+
+    /**
+     * Send a predefined prompt
+     */
+    function sendPrompt(prompt) {
+      document.getElementById('message-input').value = prompt;
+      sendMessage();
+    }
+
+    /**
+     * Add a message to the UI
+     */
+    function addMessage(role, content) {
+      const messagesContainer = document.getElementById('messages');
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+
+      if (role !== 'system') {
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = role === 'user' ? '👤' : '🤖';
+        messageDiv.appendChild(avatar);
+      }
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.textContent = content;
+
+      messageDiv.appendChild(contentDiv);
+      messagesContainer.appendChild(messageDiv);
+
+      // Scroll to bottom
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    /**
+     * Show typing indicator
+     */
+    function showTypingIndicator() {
+      document.getElementById('typing-indicator').classList.add('active');
+      const messagesContainer = document.getElementById('messages');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    /**
+     * Hide typing indicator
+     */
+    function hideTypingIndicator() {
+      document.getElementById('typing-indicator').classList.remove('active');
+    }
+
+    /**
+     * Insert selected text from document
+     */
+    function insertSelectedText() {
+      google.script.run
+        .withSuccessHandler((selectedText) => {
+          if (selectedText && selectedText.trim()) {
+            const input = document.getElementById('message-input');
+            const currentValue = input.value || '';
+            input.value = currentValue
+              ? `${currentValue}\n\n${selectedText}`
+              : selectedText;
+            input.focus();
+            autoResize(input);
+          } else {
+            alert('Por favor, selecciona texto en el documento primero.');
+          }
+        })
+        .withFailureHandler((error) => {
+          alert('Error al obtener el texto: ' + error.message);
+        })
+        .getSelectedText();
+    }
+
+    /**
+     * Clear chat history
+     */
+    function clearChat() {
+      if (confirm('¿Quieres limpiar el historial de chat?')) {
+        conversationHistory = [];
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.innerHTML = `
+          <div class="message system">
+            <div class="message-content">
+              Chat limpiado. ¿En qué puedo ayudarte?
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * Handle Enter key
+     */
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+
+    /**
+     * Auto-resize textarea
+     */
+    function autoResize(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+
+    /**
+     * Show error
+     */
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-message').textContent = message;
+    }
+
+    // Auto-resize textarea on input
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('message-input');
+      if (input) {
+        input.addEventListener('input', () => autoResize(input));
+      }
+    });
+
+    // Initialize
+    initChat();
+  </script>
+</body>
+</html>
