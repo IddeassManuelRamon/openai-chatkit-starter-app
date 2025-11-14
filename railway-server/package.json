@@ -1,0 +1,23 @@
+{
+  "name": "chatkit-proxy-server",
+  "version": "1.0.0",
+  "description": "Servidor proxy para ChatKit que conecta Google Apps Script con workflows de OpenAI Agent Builder",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["chatkit", "openai", "agent-builder", "proxy"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
